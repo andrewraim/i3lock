@@ -305,6 +305,45 @@ void draw_image(xcb_pixmap_t bg_pixmap, uint32_t *resolution) {
                       highlight_start + (M_PI / 3.0) /* end */);
             cairo_stroke(ctx);
         }
+
+        /*
+            AMR: Write some text under the indicator.
+            The Cairo function we are using does not handle newlines,
+            so we tokenize and make a carriage return ourselves, using
+            good old strtok. We do not prevent from writing off the screen.
+        */
+        {
+            // TBD: Read this as a command line argument!
+            text = "Here is your message\nAnd here's another line!";
+
+            char text_copy[strlen(text) + 1];
+            strcpy(text_copy, text);
+
+            cairo_text_extents_t extents;
+            double x, y;
+            cairo_set_source_rgb(xcb_ctx, 0.0, 0.0, 0.0);
+            cairo_select_font_face(xcb_ctx, "monospace",
+                CAIRO_FONT_SLANT_NORMAL,
+                CAIRO_FONT_WEIGHT_BOLD);
+            cairo_set_font_size(xcb_ctx, 48.0);
+
+            char* delim = "\n";
+            char* line = strtok(text_copy, delim);
+            unsigned int offset = 0;
+            while (line != NULL) {
+
+                cairo_text_extents(xcb_ctx, line, &extents);
+                x = resolution[0] / 2 - (extents.width / 2);
+                y = resolution[1] / 2 + 2*BUTTON_RADIUS + offset;
+
+                cairo_move_to(xcb_ctx, x, y);
+                cairo_show_text(xcb_ctx, line);
+
+                line = strtok(NULL, delim);
+                offset += 48.0;
+            }
+            cairo_close_path(xcb_ctx);
+        }
     }
 
     if (xr_screens > 0) {
