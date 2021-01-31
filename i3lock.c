@@ -59,6 +59,7 @@ static void input_done(void);
 
 char color[7] = "ffffff";
 uint32_t last_resolution[2];
+char* caption;
 xcb_window_t win;
 static xcb_cursor_t cursor;
 #ifndef __OpenBSD__
@@ -1027,6 +1028,7 @@ int main(int argc, char *argv[]) {
         {"help", no_argument, NULL, 'h'},
         {"no-unlock-indicator", no_argument, NULL, 'u'},
         {"image", required_argument, NULL, 'i'},
+        {"caption", required_argument, NULL, 'a'},
         {"raw", required_argument, NULL, 0},
         {"tiling", no_argument, NULL, 't'},
         {"ignore-empty-password", no_argument, NULL, 'e'},
@@ -1041,7 +1043,7 @@ int main(int argc, char *argv[]) {
     if (getenv("WAYLAND_DISPLAY") != NULL)
         errx(EXIT_FAILURE, "i3lock is a program for X11 and does not work on Wayland. Try https://github.com/swaywm/swaylock instead");
 
-    char *optstring = "hvnbdc:p:ui:teI:f";
+    char *optstring = "hvnbdc:p:ui:a:teI:f";
     while ((o = getopt_long(argc, argv, optstring, longopts, &longoptind)) != -1) {
         switch (o) {
             case 'v':
@@ -1076,6 +1078,9 @@ int main(int argc, char *argv[]) {
                 break;
             case 'i':
                 image_path = strdup(optarg);
+                break;
+            case 'a':
+                caption = strdup(optarg);
                 break;
             case 't':
                 tile = true;
@@ -1223,7 +1228,7 @@ int main(int argc, char *argv[]) {
 
     /* Pixmap on which the image is rendered to (if any) */
     xcb_pixmap_t bg_pixmap = create_bg_pixmap(conn, screen, last_resolution, color);
-    draw_image(bg_pixmap, last_resolution);
+    draw_image(bg_pixmap, last_resolution, caption);
 
     xcb_window_t stolen_focus = find_focused_window(conn, screen->root);
 
@@ -1315,6 +1320,8 @@ int main(int argc, char *argv[]) {
     xcb_destroy_window(conn, win);
     set_focused_window(conn, screen->root, stolen_focus);
     xcb_aux_sync(conn);
+
+    free(caption);
 
     return 0;
 }

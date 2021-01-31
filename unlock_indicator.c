@@ -27,6 +27,15 @@
 #define BUTTON_CENTER (BUTTON_RADIUS + 5)
 #define BUTTON_DIAMETER (2 * BUTTON_SPACE)
 
+/* AMR: These could be passed on the command line, but just use
+   constants for now */
+#define CAPTION_FONT_TYPE "monospace"
+#define CAPTION_FONT_SIZE 48.0
+#define CAPTION_COLOR_R 255
+#define CAPTION_COLOR_G 255
+#define CAPTION_COLOR_B 255
+#define CAPTION_DELIM ";"
+
 /*******************************************************************************
  * Variables defined in i3lock.c.
  ******************************************************************************/
@@ -42,6 +51,9 @@ extern xcb_window_t win;
 
 /* The current resolution of the X11 root window. */
 extern uint32_t last_resolution[2];
+
+/* The text caption to place underneath the typing indicator */
+extern char* caption;
 
 /* Whether the unlock indicator is enabled (defaults to true). */
 extern bool unlock_indicator;
@@ -86,7 +98,7 @@ auth_state_t auth_state;
  * resolution and returns it.
  *
  */
-void draw_image(xcb_pixmap_t bg_pixmap, uint32_t *resolution) {
+void draw_image(xcb_pixmap_t bg_pixmap, uint32_t *resolution, char* caption) {
     const double scaling_factor = get_dpi_value() / 96.0;
     int button_diameter_physical = ceil(scaling_factor * BUTTON_DIAMETER);
     DEBUG("scaling_factor is %.f, physical diameter is %d px\n",
@@ -117,7 +129,10 @@ void draw_image(xcb_pixmap_t bg_pixmap, uint32_t *resolution) {
     cairo_rectangle(xcb_ctx, 0, 0, resolution[0], resolution[1]);
     cairo_fill(xcb_ctx);
 
-    if (img) {
+    /* AMR: I only want the image to show up with the locking indicator
+       appears. Otherwise display the blank background */
+    if (img &&
+        (unlock_state >= STATE_KEY_PRESSED || auth_state > STATE_AUTH_IDLE)) {
         if (!tile) {
             cairo_set_source_surface(xcb_ctx, img, 0, 0);
             cairo_paint(xcb_ctx);
@@ -313,25 +328,21 @@ void draw_image(xcb_pixmap_t bg_pixmap, uint32_t *resolution) {
             good old strtok. We do not prevent from writing off the screen.
         */
         {
-            // TBD: Read this as a command line argument!
-            text = "Here is your message\nAnd here's another line!";
-
-            char text_copy[strlen(text) + 1];
-            strcpy(text_copy, text);
+            char text_copy[strlen(caption) + 1];
+            strcpy(text_copy, caption);
 
             cairo_text_extents_t extents;
             double x, y;
-            cairo_set_source_rgb(xcb_ctx, 0.0, 0.0, 0.0);
-            cairo_select_font_face(xcb_ctx, "monospace",
+            cairo_set_source_rgb(xcb_ctx, CAPTION_COLOR_R, CAPTION_COLOR_G,
+                CAPTION_COLOR_B);
+            cairo_select_font_face(xcb_ctx, CAPTION_FONT_TYPE,
                 CAIRO_FONT_SLANT_NORMAL,
                 CAIRO_FONT_WEIGHT_BOLD);
-            cairo_set_font_size(xcb_ctx, 48.0);
+            cairo_set_font_size(xcb_ctx, CAPTION_FONT_SIZE);
 
-            char* delim = "\n";
-            char* line = strtok(text_copy, delim);
+            char* line = strtok(text_copy, CAPTION_DELIM);
             unsigned int offset = 0;
             while (line != NULL) {
-
                 cairo_text_extents(xcb_ctx, line, &extents);
                 x = resolution[0] / 2 - (extents.width / 2);
                 y = resolution[1] / 2 + 2*BUTTON_RADIUS + offset;
@@ -339,8 +350,8 @@ void draw_image(xcb_pixmap_t bg_pixmap, uint32_t *resolution) {
                 cairo_move_to(xcb_ctx, x, y);
                 cairo_show_text(xcb_ctx, line);
 
-                line = strtok(NULL, delim);
-                offset += 48.0;
+                line = strtok(NULL, CAPTION_DELIM);
+                offset += CAPTION_FONT_SIZE;
             }
             cairo_close_path(xcb_ctx);
         }
@@ -395,7 +406,7 @@ void redraw_screen(void) {
         bg_pixmap = create_bg_pixmap(conn, screen, last_resolution, color);
     }
 
-    draw_image(bg_pixmap, last_resolution);
+    draw_image(bg_pixmap, last_resolution, caption);
     xcb_change_window_attributes(conn, win, XCB_CW_BACK_PIXMAP, (uint32_t[1]){bg_pixmap});
     /* XXX: Possible optimization: Only update the area in the middle of the
      * screen instead of the whole screen. */
