@@ -1,25 +1,21 @@
-Before we go too far, we should get our fork/upstream repos set up.
+Customizations
 
-- This video explains upstream, but assumes you're comfortable with
-  fork <https://youtu.be/deEYHVpE1c8>.
-- What's the difference between a fork and a regular clone?
-  <https://youtu.be/OODDLyvePr8>
+- Display custom text below the typing sensor when the sensor appears.
+- Make bg image appear only when the sensor appears; otherwise just display
+  the bg color.
 
-Needed to install some additional development libraries using apt:
+To get the project to compilem I needed to install some additional
+development libraries on Ubuntu:
+```
+$ sudo apt install libxcb-xkb-dev
+$ sudo apt install libxcb-xinerama0-dev
+$ sudo apt install libxcb-randr0-dev
+$ sudo apt install libev-dev
+$ sudo apt install libxcb-image0-dev
+$ sudo apt install libxcb-util0-dev
+$ sudo apt install libxcb-xrm-dev
+$ sudo apt install libxkbcommon-x11-dev
+$ sudo apt install libpam0g-dev
+```
 
-- libxcb-xkb-dev
-- libxcb-xinerama0-dev
-- libxcb-randr0-dev
-- libev-dev
-- libxcb-image0-dev
-- libxcb-util0-dev
-- libxcb-xrm-dev
-- libxkbcommon-x11-dev
-- libpam0g-dev
-
-TODO
-
-- Display custom text below the typing sensor, but only when it's in effect.
-- As a bonus, make any background or bg image only appear when the sensor
-  appears.
 
